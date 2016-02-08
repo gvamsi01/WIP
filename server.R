@@ -8,7 +8,7 @@ library(jsonlite)
 library(RJSONIO)
 # Leaflet bindings are a bit slow; for now we'll just sample to compensate
 set.seed(100)
-zipdata <- allzips[sample.int(nrow(allzips), 10000),]
+zipdata <- allzips[sample.int(nrow(allzips), 1000),]
 # By ordering by centile, we ensure that the (comparatively rare) SuperZIPs
 # will be drawn last and thus be easier to see
 zipdata <- zipdata[order(zipdata$centile),]
@@ -48,9 +48,9 @@ shinyServer(function(input, output, session) {
     
     hist(zipsInBounds()$centile,
          breaks = centileBreaks,
-         main = "SuperZIP score (visible zips)",
+         main = "Withdrawal (MGD)",
          xlab = "Percentile",
-         xlim = range(allzips$centile),
+         xlim = range(allzips$centile,na.rm=TRUE),
          col = '#00DD00',
          border = 'white')
   })
@@ -60,7 +60,7 @@ shinyServer(function(input, output, session) {
     if (nrow(zipsInBounds()) == 0)
       return(NULL)
     
-    print(xyplot(income ~ college, data = zipsInBounds(), xlim = range(allzips$college), ylim = range(allzips$income)))
+    print(xyplot(adultpop ~ college, data = zipsInBounds(), xlim = range(allzips$college), ylim = range(allzips$adultpop)))
   })
   
   #Add and clear markers
@@ -76,6 +76,9 @@ shinyServer(function(input, output, session) {
   })
  
   observeEvent(input$map_click, { 
+    withProgress(message='Delineating Watershed...',{
+    
+    #Delineate watershed
     url <- paste('http://streamstatsags.cr.usgs.gov/streamstatsservices/watershed.geojson?rcode=NY&xlocation=',round(input$map_click$lng,4),'&ylocation=',round(input$map_click$lat,4),'&crs=4326&includeparameters=false&includeflowtypes=false&includefeatures=true&simplify=true',sep="")
     print(url)
     #url <- "watershed.geojson"
@@ -84,42 +87,57 @@ shinyServer(function(input, output, session) {
       .[["featurecollection"]]
     geojsonList <- Filter(function(x) x["name"]=="globalwatershed",dat)[[1]][["feature"]]
     geojsonJSON <- jsonlite::toJSON(geojsonList,auto_unbox=TRUE,digits=5)
+    
+    #Get basin characteristics
+    dat2 <- readLines(url, warn='F') %>%
+      jsonlite::fromJSON(simplifyDataFrame=FALSE)%>%
+      .[["workspaceID"]]
+    url2 <- paste('http://streamstatsags.cr.usgs.gov/streamstatsservices/parameters.json?rcode=NY&workspaceID=',dat2,'&includeparameters=true',sep="")
+    basin_char <- readLines(url2,warn='F')%>%
+      jsonlite::fromJSON(simplifyDataFrame=FALSE)
+    DA <- basin_char$parameters[[1]]$value #Drainage Area (mi^2)
+    FOREST <- basin_char$parameters[[12]]$value #Percent area covered by forest (%)
+    PRCP <- basin_char$parameters[[15]]$value #Mean Annual Precipitation
+    IMPERV <- basin_char$parameters[[27]]$value #Percent impervious area (determined from NLCD 2011 impervious dataset)
+
     if (input$addMarker) {
       leafletProxy("map") %>%
       addGeoJSON(geojsonJSON)
-  }})
-  
+      }
+    })
+  })
+
   # This observer is responsible for maintaining the circles and legend,
   # according to the variables the user has chosen to map to color and size.
-  observe({
-    colorBy <- input$color
-    sizeBy <- input$size
+  #observe({
+    #colorBy <- input$color
+    #sizeBy <- input$size
     
-    if (colorBy == "superzip") {
+    #if (colorBy == "centile") {
       # Color and palette are treated specially in the "superzip" case, because
       # the values are categorical instead of continuous.
-      colorData <- ifelse(zipdata$centile >= (100 - input$threshold), "yes", "no")
-      pal <- colorFactor("Spectral", colorData)
-    } else {
-      colorData <- zipdata[[colorBy]]
-      pal <- colorBin("Spectral", colorData, 7, pretty = FALSE)
-    }
+      #colorData <- ifelse(zipdata$centile >= (2 - input$threshold), "yes", "no")
+      #pal <- colorFactor("Spectral", colorData)
+    #} else {
+      #colorData <- zipdata[[colorBy]]
+      #pal <- colorBin("Spectral", colorData, 2, pretty = FALSE)
+    #}
     
-    if (sizeBy == "superzip") {
+    #if (sizeBy == "centile") {
       # Radius is treated specially in the "superzip" case.
-      radius <- ifelse(zipdata$centile >= (100 - input$threshold), 30000, 3000)
-    } else {
-      radius <- zipdata[[sizeBy]] / max(zipdata[[sizeBy]]) * 30000
-    }
+      #radius <- ifelse(zipdata$centile >= (100 - input$threshold), 30000, 3000)
+    #} else {
+      #radius <- zipdata[[sizeBy]] / max(zipdata[[sizeBy]]) * 30000
+    #}
     
     #leafletProxy("map", data = zipdata) %>%
       #clearShapes() %>%
-      #addCircles(~longitude, ~latitude, radius=radius, layerId=~zipcode,
+      #addCircles(~longitude, ~latitude, radius=radius,
                  #stroke=FALSE, fillOpacity=0.4, fillColor=pal(colorData)) %>%
       #addLegend("bottomleft", pal=pal, values=colorData, title=colorBy,
                 #layerId="colorLegend")
     
-  })
+  #})
   
   # Show a popup at the given location
   showZipcodePopup <- function(zipcode, lat, lng) {

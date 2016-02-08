@@ -7,15 +7,14 @@ library('shinyBS')
 
 # Choices for drop-downs
 vars <- c(
-  "Is SuperZIP?" = "superzip",
-  "Centile score" = "centile",
-  "College education" = "college",
-  "Median income" = "income",
-  "Population" = "adultpop"
+  "Consumption (MGD)" = "superzip",
+  "Withdrawal (MGD)" = "centile"
+  #"Consumption (MGY)" = "college",
+  #"Withdrawal (MGY)" = "adultpop"
 )
 
 
-shinyUI(navbarPage("Superzip", id="nav",
+shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                    
                    tabPanel("Interactive map",
                             div(class="outer",
@@ -33,18 +32,18 @@ shinyUI(navbarPage("Superzip", id="nav",
                                               draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
                                               width = 330, height = "auto",
                                               
-                                              h2("ZIP explorer"),
-                                              checkboxInput('addMarker','Add marker on click'),
+                                              h2("Water Use Explorer"),
+                                              checkboxInput('addMarker','Delineate Watershed'),
                                               actionButton('clearMarkers','Clear all markers'),
-                                              selectInput("color", "Color", vars),
-                                              selectInput("size", "Size", vars, selected = "adultpop"),
+                                              #selectInput("color", "Color", vars),
+                                              #selectInput("size", "Size", vars, selected = "centile"),
                                               conditionalPanel("input.color == 'superzip' || input.size == 'superzip'",
                                                                # Only prompt for threshold when coloring or sizing by superzip
-                                                               numericInput("threshold", "SuperZIP threshold (top n percentile)", 5)
-                                              ),
+                                                               numericInput("threshold", "Water Use threshold (top n percentile)", 1)
+                                              )
                                               
-                                              plotOutput("histCentile", height = 200),
-                                              plotOutput("scatterCollegeIncome", height = 250)
+                                              #plotOutput("histCentile", height = 200),
+                                              #plotOutput("scatterCollegeIncome", height = 250)
                                 ),
                                 
                                 tags$div(id="cite",
@@ -83,6 +82,7 @@ shinyUI(navbarPage("Superzip", id="nav",
                    
                    conditionalPanel("false", icon("crosshair"))
 ))
+
 
 
 
