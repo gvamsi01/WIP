@@ -37,7 +37,7 @@ shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                                               actionButton('clearMarkers','Clear all markers'),
                                               #selectInput("color", "Color", vars),
                                               #selectInput("size", "Size", vars, selected = "centile"),
-                                              conditionalPanel("input.color == 'superzip' || input.size == 'superzip'",
+                                              conditionalPanel("input.color == 'zipdata' || input.size == 'zipdata'",
                                                                # Only prompt for threshold when coloring or sizing by superzip
                                                                numericInput("threshold", "Water Use threshold (top n percentile)", 1)
                                               )
@@ -55,18 +55,14 @@ shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                    tabPanel("Data explorer",
                             fluidRow(
                               column(3,
-                                     selectInput("states", "States", c("All states"="", structure(state.abb, names=state.name), "Washington, DC"="DC"), multiple=TRUE)
-                              ),
-                              column(3,
-                                     conditionalPanel("input.states",
-                                                      selectInput("cities", "Cities", c("All cities"=""), multiple=TRUE)
-                                     )
-                              ),
-                              column(3,
-                                     conditionalPanel("input.states",
-                                                      selectInput("zipcodes", "Zipcodes", c("All zipcodes"=""), multiple=TRUE)
-                                     )
+                                     selectInput("cities", "City", as.character(zipdata$city.x), multiple=FALSE)
                               )
+                              #column(3,
+                              #       conditionalPanel("input.cities",
+                              #                        selectInput("facility", "Facility",as.list(as.character(zipdata$city.y[which(zipdata$city.x=="input.cities")])), multiple=FALSE)
+                              #       )
+                              #)
+                      
                             ),
                             fluidRow(
                               column(1,
