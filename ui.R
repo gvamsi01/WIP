@@ -1,18 +1,24 @@
-library('shiny')
-library('leaflet')
-library('ShinyDash')
-library('shinyGridster')
-library('RColorBrewer')
-library('shinyBS')
+library(shiny)
+library(leaflet)
+library(ShinyDash)
+library(shinyGridster)
+library(RColorBrewer)
+library(shinyBS)
+library(shinyapps)
 
 # Choices for drop-downs
 vars <- c(
-  "Consumption (MGD)" = "superzip",
-  "Withdrawal (MGD)" = "centile"
+  "Withdrawal (MGD)" = "centile",
+  "Consumption (MGD)" = "superzip"
   #"Consumption (MGY)" = "college",
   #"Withdrawal (MGY)" = "adultpop"
 )
-
+allzips <- readRDS("data/superzip.rds")
+set.seed(100)
+zipdata <- allzips[sample.int(nrow(allzips), 1000),]
+# By ordering by centile, we ensure that the (comparatively rare) SuperZIPs
+# will be drawn last and thus be easier to see
+zipdata <- zipdata[order(zipdata$centile),]
 
 shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                    
@@ -35,12 +41,13 @@ shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                                               h2("Water Use Explorer"),
                                               checkboxInput('addMarker','Delineate Watershed'),
                                               actionButton('clearMarkers','Clear all markers'),
+                                              selectInput("variable","Water Use Data",vars,selected=vars[[1]])
                                               #selectInput("color", "Color", vars),
                                               #selectInput("size", "Size", vars, selected = "centile"),
-                                              conditionalPanel("input.color == 'zipdata' || input.size == 'zipdata'",
+                                              #conditionalPanel("input.color == 'zipdata' || input.size == 'zipdata'",
                                                                # Only prompt for threshold when coloring or sizing by superzip
-                                                               numericInput("threshold", "Water Use threshold (top n percentile)", 1)
-                                              )
+                                              #                 numericInput("threshold", "Water Use threshold (top n percentile)", 1)
+                                              #)
                                               
                                               #plotOutput("histCentile", height = 200),
                                               #plotOutput("scatterCollegeIncome", height = 250)
@@ -55,7 +62,7 @@ shinyUI(navbarPage("Water Intelligence Platform", id="nav",
                    tabPanel("Data explorer",
                             fluidRow(
                               column(3,
-                                     selectInput("cities", "City", as.character(zipdata$city.x), multiple=FALSE)
+                                     selectInput("counties", "County", as.character(zipdata$county), multiple=FALSE)
                               )
                               #column(3,
                               #       conditionalPanel("input.cities",

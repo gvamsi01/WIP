@@ -6,6 +6,7 @@ library(lattice)
 library(dplyr)
 library(jsonlite)
 library(RJSONIO)
+
 # Leaflet bindings are a bit slow; for now we'll just sample to compensate
 set.seed(100)
 zipdata <- allzips[sample.int(nrow(allzips), 1000),]
@@ -127,6 +128,21 @@ shinyServer(function(input, output, session) {
     })
   })
   
+
+  #add withdrawal and consumption circles- not quite working...
+  observe({
+    if(input$variable==vars[[1]]){
+    withdraw_content <- paste(as.character(zipdata$city.y),"Withdrawal (MGD):",as.character((zipdata$centile)),sep="<br/>")
+      leafletProxy("map", data = zipdata)%>%
+        clearShapes() %>%
+        addCircles(~longitude, ~latitude, radius=(zipdata$centile)/2,zipdata$centile,fillOpacity=0.5,color = "red",popup=~withdraw_content)
+    }else{
+      withdraw_content <- paste(as.character(zipdata$city.y),"Consumptive Use (MGD):",as.character((zipdata$superzip)),sep="<br/>")
+      leafletProxy("map", data = zipdata)%>%
+        clearShapes() %>%
+        addCircles(~longitude, ~latitude, radius=(zipdata$superzip)/2,zipdata$superzip,fillOpacity=0.5,color = "blue",popup=~withdraw_content)
+    }
+    })
   # This observer is responsible for maintaining the circles and legend,
   # according to the variables the user has chosen to map to color and size.
 #   observe({
@@ -267,10 +283,10 @@ shinyServer(function(input, output, session) {
         Withdrawal >= input$minScore,
         Withdrawal <= input$maxScore,
         #is.null(input$states) | State %in% input$states,
-        is.null(input$cities) | City %in% input$cities
+        is.null(input$counties) | County %in% input$counties
         #is.null(input$zipcodes) | Zipcode %in% input$zipcodes
       ) %>%
-      mutate(Action = paste('<a class="go-map" href="" data-lat="', Lat, '" data-long="', Long, '" data-zip="', City, '"><i class="fa fa-crosshairs"></i></a>', sep=""))
+      mutate(Action = paste('<a class="go-map" href="" data-lat="', Lat, '" data-long="', Long, '" data-zip="', County, '"><i class="fa fa-crosshairs"></i></a>', sep=""))
       action <- DT::dataTableAjax(session, df)
     
     DT::datatable(df, options = list(ajax = list(url = action)), escape = FALSE)

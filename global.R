@@ -1,4 +1,17 @@
 library(dplyr)
+library(shiny)
+library(leaflet)
+library(RColorBrewer)
+library(scales)
+library(lattice)
+library(dplyr)
+library(jsonlite)
+library(RJSONIO)
+library(ShinyDash)
+library(shinyGridster)
+library(shinyBS)
+library(shinyapps)
+library(httr)
 
 allzips <- readRDS("data/superzip.rds")
 allzips$latitude <- jitter(allzips$latitude)
@@ -9,7 +22,8 @@ row.names(allzips) <- allzips$zipcode
 
 cleantable <- allzips %>%
   select(
-    City = city.x,
+    #City = city.x,
+    County = county,
     State = state.x,
     Facility = city.y,
     #Zipcode = zipcode,
